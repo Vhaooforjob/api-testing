@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import * as Mui from "@mui/material";
+import { Container, Typography, Card, Grid, Box, Button } from "@mui/material";
 import axios from "axios";
-
-const methods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+import UrlInput from "./components/UrlInput";
+import MethodSelector from "./components/MethodSelector";
+import QueryParamsForm from "./components/QueryParamsForm";
+import HeadersForm from "./components/HeadersForm";
+import RequestBodyInput from "./components/RequestBodyInput";
+import ResponseDisplay from "./components/ResponseDisplay";
 
 const App: React.FC = () => {
   const [url, setUrl] = useState("");
@@ -82,16 +86,14 @@ const App: React.FC = () => {
       if (["POST", "PUT", "PATCH"].includes(method)) {
         config.data = body ? JSON.parse(body) : {};
       }
+
       const startTime = performance.now();
-
       const res = await axios(config);
-
       const endTime = performance.now();
-      const duration = endTime - startTime;
 
       setResponse(res.data);
       setStatus(res.status); 
-      setResponseTime(duration); 
+      setResponseTime(endTime - startTime); 
     } catch (err: any) {
       setError(err.message || "Request failed");
     } finally {
@@ -99,205 +101,61 @@ const App: React.FC = () => {
     }
   };
 
-  const renderTable = () => {
-    if (!response) return null;
-  
-    return Object.keys(response).map((key) => {
-      return (
-        <div>
-          <Mui.Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 2 }}>
-            Table Response
-          </Mui.Typography>
-          {Object.keys(response).map((key) => {
-            const data = response[key];
-
-            return (
-              <div key={key} style={{ marginBottom: '32px', backgroundColor: "#f4f4f4", padding: "10px" }}>
-                <Mui.Typography variant="h6" sx={{ marginBottom: 2 }}>
-                  {key}
-                </Mui.Typography>
-                <Mui.TableContainer component={Mui.Paper} sx={{ marginTop: 1 }}>
-                  <Mui.Table sx={{ minWidth: 650 }} aria-label="simple table">
-                    <Mui.TableHead>
-                      <Mui.TableRow>
-                        {Object.keys(data).map((colKey) => (
-                          <Mui.TableCell key={colKey}>{colKey}</Mui.TableCell>
-                        ))}
-                      </Mui.TableRow>
-                    </Mui.TableHead>
-                    <Mui.TableBody>
-                      <Mui.TableRow>
-                        {Object.values(data).map((value, index) => (
-                          <Mui.TableCell key={index}>
-                            {typeof value === 'string' || typeof value === 'number' ? value : JSON.stringify(value)}
-                          </Mui.TableCell>
-                        ))}
-                      </Mui.TableRow>
-                    </Mui.TableBody>
-                  </Mui.Table>
-                </Mui.TableContainer>
-              </div>
-            );
-          })}
-        </div>
-      );
-    });
-  };
-
-  const renderJsonResponse = () => {
-    return (
-      <Mui.Box sx={{ marginTop: 4 }}>
-        <Mui.Typography variant="h6">JSON Response</Mui.Typography>
-        <Mui.Box component="pre" sx={{ backgroundColor: "#f4f4f4", padding: 2, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-          <code>{JSON.stringify(response, null, 2)}</code>
-        </Mui.Box>
-      </Mui.Box>
-    );
-  };  
-
   return (
-    <Mui.Container maxWidth="md" sx={{ mt: 6, mb: 4}}>
-      <Mui.Typography variant="h4" fontWeight={600} gutterBottom>
-        API Testing 
-      </Mui.Typography>
-      <Mui.Card sx={{ p: 3, mb: 2 }}>
-        <Mui.Grid container spacing={10}>
-          <Mui.Box mb={2} sx={{ flexGrow: 1 }}>
-            <Mui.TextField
-              fullWidth
-              label="Request URL"
-              value={url}
-              onChange={handleUrlChange}
+    <Container maxWidth="md" sx={{ mt: 6, mb: 4 }}>
+      <Typography variant="h4" fontWeight={600} gutterBottom>
+        API Testing
+      </Typography>
+
+      <Card sx={{ p: 3, mb: 2 }}>
+        <Grid container spacing={2} direction="column">     
+          <Box display="flex" gap={2}>
+            <Box flex={1}>
+              <UrlInput url={url} onChange={handleUrlChange} />
+            </Box>
+            <Box width="200px">
+              <MethodSelector method={method} onChange={setMethod} />
+            </Box>
+          </Box>
+          <Grid container spacing={2}>
+            <QueryParamsForm
+              queryParams={queryParams}
+              onChange={handleQueryParamChange}
+              onAdd={addQueryParamField}
             />
-          </Mui.Box>
-          <Mui.Box>
-            <Mui.TextField
-              select
-              fullWidth
-              label="HTTP Method"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-            >
-              {methods.map((m) => (
-                <Mui.MenuItem key={m} value={m}>
-                  {m}
-                </Mui.MenuItem>
-              ))}
-            </Mui.TextField>
-          </Mui.Box>
-
-          <Mui.Box mb={2} >
-            <Mui.Typography variant="h6" gutterBottom>
-              Query Parameters
-            </Mui.Typography>
-            {queryParams.map((param, idx) => (
-              <Mui.Grid container spacing={2} key={idx} sx={{ mb: 1 }}>
-                <Mui.Box mb={2}>
-                  <Mui.TextField
-                    label="Key"
-                    fullWidth
-                    value={param.key}
-                    onChange={(e) => handleQueryParamChange(idx, "key", e.target.value)}
-                  />
-                </Mui.Box>
-                <Mui.Box mb={2}>
-                  <Mui.TextField
-                    label="Value"
-                    fullWidth
-                    value={param.value}
-                    onChange={(e) => handleQueryParamChange(idx, "value", e.target.value)}
-                  />
-                </Mui.Box>
-              </Mui.Grid>
-            ))}
-            <Mui.Button variant="outlined" onClick={addQueryParamField} sx={{ mt: 1 }}>
-              + Add Query Param
-            </Mui.Button>
-          </Mui.Box>
-
-          <Mui.Box mb={2}>
-            <Mui.Typography variant="h6" gutterBottom>
-              Headers
-            </Mui.Typography>
-            {headers.map((header, idx) => (
-              <Mui.Grid container spacing={2} key={idx} sx={{ mb: 1 }}>
-                <Mui.Box mb={2}>
-                  <Mui.TextField
-                    label="Key"
-                    fullWidth
-                    value={header.key}
-                    onChange={(e) => handleHeaderChange(idx, "key", e.target.value)}
-                  />
-                </Mui.Box>
-                <Mui.Box mb={2}>
-                  <Mui.TextField
-                    label="Value"
-                    fullWidth
-                    value={header.value}
-                    onChange={(e) => handleHeaderChange(idx, "value", e.target.value)}
-                  />
-                </Mui.Box>
-              </Mui.Grid>
-            ))}
-            <Mui.Button variant="outlined" onClick={addHeaderField} sx={{ mt: 1 }}>
-              + Add Header
-            </Mui.Button>
-            <Mui.Box mb={2}>
-            <Mui.Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              size="large"
-              onClick={sendRequest}
-              disabled={loading || !url}
-              sx={{ mt: 2 }}
-            >
-              {loading ? "Sending..." : "Send Request"}
-            </Mui.Button>
-          </Mui.Box>
-          </Mui.Box>
-
+          </Grid>
+          <Grid container spacing={2}>
+            <HeadersForm headers={headers} onChange={handleHeaderChange} onAdd={addHeaderField} />
+          </Grid>
           {["POST", "PUT", "PATCH"].includes(method) && (
-            <Mui.Box mb={2}>
-              <Mui.Typography variant="h6" gutterBottom>
-                Body (JSON)
-              </Mui.Typography>
-              <Mui.TextField
+            <Grid container spacing={2}>
+              <RequestBodyInput body={body} onChange={setBody} />
+            </Grid>
+          )}
+          <Grid container spacing={2}>
+            <Box>
+              <Button
+                variant="contained"
+                color="primary"
                 fullWidth
-                multiline
-                minRows={4}
-                placeholder='e.g. { "name": "John" }'
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-              />
-            </Mui.Box>
-          )}
-        </Mui.Grid>
-      </Mui.Card>
+                size="large"
+                onClick={sendRequest}
+                disabled={loading || !url}
+              >
+                {loading ? "Sending..." : "Send Request"}
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </Card>
 
-      <Mui.Card>
-        <Mui.CardContent>
-          <Mui.Typography variant="h6" gutterBottom>
-            📦 Response
-          </Mui.Typography>
-          {status !== null && (
-            <Mui.Typography variant="body1" color="textSecondary">
-              Status: {status} | Response Time: {responseTime?.toFixed(2)} ms
-            </Mui.Typography>
-          )}
-          {error ? (
-            <Mui.Typography color="error">{error}</Mui.Typography>
-          ) : response ? (
-            <>
-              {renderJsonResponse()}
-              {renderTable()}
-            </>
-          ) : (
-            <Mui.Typography color="textSecondary">No response yet.</Mui.Typography>
-          )}
-        </Mui.CardContent>
-      </Mui.Card>
-    </Mui.Container>
+      <ResponseDisplay
+        status={status}
+        time={responseTime}
+        response={response}
+        error={error}
+      />
+    </Container>
   );
 };
 
